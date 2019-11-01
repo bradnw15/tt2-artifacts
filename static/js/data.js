@@ -934,7 +934,7 @@ var artifacts = {
         },
         'ts2': {
             'fumo':0,
-            'fumoef':1.5e6,
+            'fumoef':2e6,
             'active': 1,
             'name': '仙后法杖',
             'nickname': 'TSc',
