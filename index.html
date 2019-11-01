@@ -1,5 +1,6 @@
+
 <!doctype html>
-<html lang="zh">
+<html lang="zh" xmlns="http://www.w3.org/1999/html">
 <head>
     <!-- Required meta tags -->
     <meta charset="utf-8">
@@ -9,18 +10,15 @@
     <link rel="stylesheet" href="static/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="static/css/app.css"/>
 
-    <!--<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>-->
-    <!--<script>-->
-    <!--(adsbygoogle = window.adsbygoogle || []).push({-->
-    <!--google_ad_client: "ca-pub-8453254126408456",-->
-    <!--enable_page_level_ads: true-->
-    <!--});-->
-    <!--</script>-->
+    <!-- test use script -->
+<!--    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>-->
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+
     <script type="text/javascript"
             src="https://cdn.jsdelivr.net/npm/cookie-bar/cookiebar-latest.min.js?theme=grey&tracking=1&thirdparty=1&always=1&scrolling=1&remember=30"></script>
 </head>
 <body class="bg-dark text-light">
-<div class="container-fluid">
+<div id="app" class="container-fluid">
     <div class="sticky-top border-bottom border-secondary bg-dark">
         <ul class="nav nav-pills" id="navTab" role="tablist">
             <li class="nav-item">
@@ -36,26 +34,27 @@
                    aria-controls="reccs" aria-selected="false">圣物</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-light" id="sp-tab" data-toggle="tab" href="#sp" role="tab" aria-controls="sp"
-                   aria-selected="false">技能</a>
+                <a class="nav-link text-light" id="books-tab" data-toggle="tab" href="#books" role="tab" aria-controls="books"
+                   aria-selected="false">红书</a>
             </li>
-            <li class="nav-item d-none">
-                <a class="nav-link text-light" id="dal-tab" data-toggle="tab" href="#dal" role="tab" aria-controls="dal"
-                   aria-selected="false">截图模式</a>
+            <li class="nav-item">
+                <a class="nav-link text-light" id="dark-tab" data-toggle="tab" href="#dark" role="tab" aria-controls="dark"
+                   aria-selected="false">永恒黑暗</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-light" id="log-tab" data-toggle="tab" href="#log" role="tab" aria-controls="log"
+                   aria-selected="false">日志</a>
             </li>
         </ul>
-        <h1 class="h4">TT2 优化器（汉化版 by RiggZh） <span class="badge badge-secondary">2.12.1</span></h1>
+        <h1 class="h4">TT2 优化器（by 月檬） <span class="badge badge-secondary">{{vision}}</span></h1>
     </div>
     <div class="tab-content" id="tabContent">
         <div class="tab-pane fade show active" id="style" role="tabpanel" aria-labelledby="style-tab">
-            <p><a href="https://tt2-optimizer.herokuapp.com/">点击此处跳转英文原版</a></p>
             <form>
                 <div class="form-row mb-4">
                     <div class="form-group col-12 col-md-6 col-lg-4">
                         <label for="build">主要伤害来源</label>
                         <select class="form-control" id="build" onchange="adjustWeights();">
-                            <option value="hero">英雄</option>
-                            <option value="tap">点击</option>
                             <option value="pet">宠物</option>
                             <option value="hs">天堂圣击</option>
                             <option value="sc">影分身术</option>
@@ -136,8 +135,8 @@
                     </div>
                 </div>
             </form>
-            <button type="button" class="btn btn-secondary mb-4" onclick="exportData()">Export Data</button>
-            <button type="button" class="btn btn-secondary mb-4" onclick="startImport()">Import Data*</button>
+            <button type="button" class="btn btn-secondary mb-4" onclick="exportData()">导出数据</button>
+            <button type="button" class="btn btn-secondary mb-4" onclick="startImport()">导入数据</button>
             <div id="export_wrap">
                 <div class="mb-2">将以下导出的数据复制以在其他地方导入</div>
                 <code class="mb-5" id="export"></code>
@@ -167,8 +166,10 @@
                 </label>
             </div>
             <p>神器伤害： <span id="adsanity">0%</span></p>
+<!--            <p>Total efficiency： <span>{{totalEffect}}</span></p>-->
             <button type="button" class="btn btn-primary mb-3" onclick="checkAllArtifacts();">选中全部</button>
-            <button type="button" class="btn btn-secondary mb-3" onclick="dalViewArtifact(1);">截图模式</button>
+            <button type="button" class="btn btn-primary mb-3" @click="updateAllMaxArtifacts()">一键升满有等级上限的神器</button>
+<!--            <button type="button" class="btn btn-secondary mb-3" @click="changeScreen(true)">截图模式</button>-->
             <div class="col-12 col-md-8 col-lg-6">
                 <div class="row mb-2 ml-2">
                     图例：
@@ -183,6 +184,7 @@
                     <tr>
                         <th scope="col"></th>
                         <th scope="col">神器</th>
+                        <th scope="col">附魔</th>
                         <th scope="col">等级</th>
                         <th scope="col">收益</th>
                         <th scope="col">说明</th>
@@ -192,39 +194,13 @@
                     </tbody>
                 </table>
             </div>
-            <h5>技能</h5>
-            <p>填写您当前已点技能的级别。如您不希望获得某项技能的升级，请取消勾选。如您还没点这个技能，请设置它的级别为 0</p>
-            <button type="button" class="btn btn-primary mb-3" onclick="checkAllSkills();">选中所有技能</button>
-            <button type="button" class="btn btn-danger mb-3" onclick="resetSkills();">重置所有技能</button>
-            <div class="col-12 col-md-8 col-lg-6">
-                <div class="row mb-2 ml-2">
-                    图例：
-                    <span class="badge badge-pill badge-success ml-2">主要伤害提升</span>
-                    <span class="badge badge-pill badge-secondary ml-2">次要伤害提升</span>
-                    <span class="badge badge-pill badge-warning ml-2">金币提升</span>
-                    <span class="badge badge-pill badge-danger ml-2">前置技能</span>
-                </div>
-                <table class="table table-striped table-sm table-dark">
-                    <thead>
-                    <tr>
-                        <th scope="col"></th>
-                        <th scope="col">技能</th>
-                        <th scope="col">等级</th>
-                        <th scope="col">收益</th>
-                        <th scope="col">说明</th>
-                    </tr>
-                    </thead>
-                    <tbody id="skills">
-                    </tbody>
-                </table>
-            </div>
         </div>
-        <div class="tab-pane fade" id="dal" role="tabpanel" aria-labelledby="dal-tab">
+        <div v-show="isScreen" class="tab-pane fade" id="dal" role="tabpanel" aria-labelledby="dal-tab">
             <div class="row mb-4" id="daltifacts">
             </div>
-            <button type="button" class="btn btn-secondary mb-3" onclick="dalViewArtifact(0);">退出截图模式</button>
+            <button type="button" class="btn btn-secondary mb-3" @click="changeScreen(false)">退出截图模式</button>
         </div>
-        <div class="tab-pane fade" id="reccs" role="tabpanel" aria-labelledby="reccs-tab">
+        <div v-show="!isScreen" class="tab-pane fade" id="reccs" role="tabpanel" aria-labelledby="reccs-tab">
             <div id="relicreccs">
                 <p>请输入预计花费的圣物数量： <br/>
                     <small>强制四舍五入</small>
@@ -311,6 +287,45 @@
                             <option value="e79">e79</option>
                             <option value="e80">e80</option>
                             <option value="e81">e81/aw</option>
+                            <option value="e82">e82</option>
+                            <option value="e83">e83</option>
+                            <option value="e84">e84/ax</option>
+                            <option value="e85">e85</option>
+                            <option value="e86">e86</option>
+                            <option value="e87">e87/ay</option>
+                            <option value="e88">e88</option>
+                            <option value="e89">e89</option>
+                            <option value="e90">e90/az</option>
+                            <option value="e91">e91</option>
+                            <option value="e92">e92</option>
+                            <option value="e93">e93/ba</option>
+                            <option value="e94">e94</option>
+                            <option value="e95">e95</option>
+                            <option value="e96">e96/bb</option>
+                            <option value="e97">e97</option>
+                            <option value="e98">e98</option>
+                            <option value="e99">e99/bc</option>
+                            <option value="e100">e100</option>
+                            <option value="e101">e101</option>
+                            <option value="e102">e102/bd</option>
+                            <option value="e103">e103</option>
+                            <option value="e104">e104</option>
+                            <option value="e105">e105/be</option>
+                            <option value="e106">e106</option>
+                            <option value="e107">e107</option>
+                            <option value="e108">e108/bf</option>
+                            <option value="e109">e109</option>
+                            <option value="e110">e110</option>
+                            <option value="e111">e111/bh</option>
+                            <option value="e112">e112</option>
+                            <option value="e113">e113</option>
+                            <option value="e114">e114/bi</option>
+                            <option value="e115">e115</option>
+                            <option value="e116">e116</option>
+                            <option value="e117">e117/bj</option>
+                            <option value="e118">e118</option>
+                            <option value="e119">e119</option>
+                            <option value="e120">e120/bk</option>
                         </select>
                     </div>
                     <label class="ml-4">
@@ -342,11 +357,11 @@
                     </div>
                 </form>
                 <button id="generateRelicUpdates" type="button" class="btn btn-primary mb-4"
-                        onclick="generateUpgrades()">Generate Upgrades
+                        onclick="generateUpgrades()">开始计算
                 </button>
-                <label class="ml-4">
-                    <small>**Note, this only applies to %-based recommendations.</small>
-                </label>
+<!--                <label class="ml-4">-->
+<!--                    <small>**Note, this only applies to %-based recommendations.</small>-->
+<!--                </label>-->
             </div>
             <div id="relicsuggs">
                 <div class="row mb-2 ml-2">
@@ -370,112 +385,139 @@
                 </div>
             </div>
         </div>
-        <div class="tab-pane fade" id="sp" role="tabpanel" aria-labelledby="sp-tab">
-            <p>以下是按照收益列出的推荐技能，如果您采取某一项建议，请点击该建议按钮，这将重新计算您的下一个建议。您可以决定是使用最高收益还是较低收益的技能（花费更少的技能点）</p>
-            <p>RiggZh：x SP 后的百分比是我自己加的，是用收益除以技能点数，仅供参考</p>
-            <div class="row mb-2 ml-2">
-                图例:
-                <span class="badge badge-pill badge-success ml-2">主要伤害</span>
-                <span class="badge badge-pill badge-secondary ml-2">次要伤害</span>
-                <span class="badge badge-pill badge-warning ml-2">金币</span>
-                <span class="badge badge-pill badge-danger ml-2">前置</span>
-            </div>
-            <div id="nextskill"></div>
-            <div class="container">
-                <div class="row">
-                    <div class="col-6 col-md-3 col-lg-2 skillselfie">
-                        <div class="row">
-                            <div class="col-4" id="totalSP"></div>
-                            <div class="col-4 redskill text-light" id="R1"></div>
-                            <div class="col-4" id="totalSPred"></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-4 redskill text-light" id="R2_1"></div>
-                            <div class="col-4 redskill text-light" id="R2_2"></div>
-                            <div class="col-4 redskill text-light" id="R2_3"></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-4 redskill text-light" id="R3_1"></div>
-                            <div class="col-4 redskill text-light" id="R3_2"></div>
-                            <div class="col-4 redskill text-light" id="R3_3"></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-4 redskill text-light" id="R4_1"></div>
-                            <div class="col-4"></div>
-                            <div class="col-4 redskill text-light" id="R4_3"></div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3 col-lg-2 skillselfie">
-                        <div class="row">
-                            <div class="col-4"></div>
-                            <div class="col-4 yellowskill text-dark" id="Y1"></div>
-                            <div class="col-4" id="totalSPyellow"></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-4 yellowskill text-dark" id="Y2_1"></div>
-                            <div class="col-4 yellowskill text-dark" id="Y2_2"></div>
-                            <div class="col-4 yellowskill text-dark" id="Y2_3"></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-4 yellowskill text-dark" id="Y3_1"></div>
-                            <div class="col-4 yellowskill text-dark" id="Y3_2"></div>
-                            <div class="col-4 yellowskill text-dark" id="Y3_3"></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-4 yellowskill text-dark" id="Y4_1"></div>
-                            <div class="col-4"></div>
-                            <div class="col-4 yellowskill text-dark" id="Y4_3"></div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3 col-lg-2 skillselfie">
-                        <div class="row">
-                            <div class="col-4"></div>
-                            <div class="col-4 blueskill text-light" id="B1"></div>
-                            <div class="col-4" id="totalSPblue"></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-4 blueskill text-light" id="B2_1"></div>
-                            <div class="col-4 blueskill text-light" id="B2_2"></div>
-                            <div class="col-4 blueskill text-light" id="B2_3"></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-4 blueskill text-light" id="B3_1"></div>
-                            <div class="col-4 blueskill text-light" id="B3_2"></div>
-                            <div class="col-4 blueskill text-light" id="B3_3"></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-4 blueskill text-light" id="B4_1"></div>
-                            <div class="col-4 blueskill text-light" id="B4_2"></div>
-                            <div class="col-4 blueskill text-light" id="B4_3"></div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3 col-lg-2 skillselfie">
-                        <div class="row">
-                            <div class="col-4"></div>
-                            <div class="col-4 greenskill text-dark" id="G1"></div>
-                            <div class="col-4" id="totalSPgreen"></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-4 greenskill text-dark" id="G2_1"></div>
-                            <div class="col-4 greenskill text-dark" id="G2_2"></div>
-                            <div class="col-4 greenskill text-dark" id="G2_3"></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-4 greenskill text-dark" id="G3_1"></div>
-                            <div class="col-4 greenskill text-dark" id="G3_2"></div>
-                            <div class="col-4 greenskill text-dark" id="G3_3"></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-4"></div>
-                            <div class="col-4"></div>
-                            <div class="col-4"></div>
-                        </div>
-                    </div>
+        <div class="tab-pane fade" id="books" role="tabpanel" aria-labelledby="books-tab">
+            <p><h1 class="h4">暗影之书占比计算</h1></p>
+            <table class="table table-striped table-sm table-dark">
+                <tr>
+                    <td><label>总圣物量</label></td>
+                    <td><input v-model.lazy.trim="totalRelics" type="number" class="form-control artlvl" placeholder="0"></td>
+                </tr>
+                <tr>
+                    <td><label>红书等级</label></td>
+                    <td><input v-model.lazy.trim="bosLevel" type="number" class="form-control artlvl" placeholder="0"></td>
+                </tr>
+                <tr>
+                    <td><label>红书所占比例</label></td>
+                    <td>{{bookRatio}}</td>
+                </tr>
+            </table>
+            <div class="line"></div>
+            <p><h1 class="h4">暗影之书等级推荐</h1>关卡数请填入平時蜕变关卡，非最高关卡</p>
+            <table class="table table-striped table-sm table-dark">
+                <tr>
+                    <td><label>蜕变关卡数</label></td>
+                    <td><input v-model.lazy.number.trim="bookSet.stage" type="number" class="form-control artlvl" placeholder="0"></td>
+                </tr>
+                <tr>
+                    <td><label for="hero">神话套数</label></td>
+                    <td><input v-model.lazy.number.trim="bookSet.mythic" type="number" class="form-control artlvl" placeholder="0"></td>
+                </tr>
+                <tr>
+                    <td><label for="hero">工艺等级(电源吕)</label></td>
+                    <td><input v-model.lazy.number.trim="bookSet.crafting" type="number" class="form-control artlvl" placeholder="0"></td>
+                </tr>
+            </table>
+            <table class="table table-striped table-sm table-dark">
+                <tbody>
+                    <tr>
+                        <th>基础圣物</th>
+                        <td>{{bookLevel.relics}}</td>
+                    </tr>
+                    <tr>
+                        <th>低标</th>
+                        <td>{{bookLevel.low}}</td>
+                    </tr>
+                    <tr>
+                        <th>均标</th>
+                        <td>{{bookLevel.normal}}</td>
+                    </tr>
+                    <tr>
+                        <th>高标</th>
+                        <td>{{bookLevel.high}}</td>
+                    </tr>
+                    <tr>
+                        <th>红书是我的命</th>
+                        <td>{{bookLevel.veryHigh}}</td>
+                    </tr>
+                    <tr>
+                        <th>我就是红书</th>
+                        <td>{{bookLevel.superHigh}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="tab-pane fade" id="dark" role="tabpanel" aria-labelledby="dark-tab">
+            <p><h1 class="h4">永恒黑暗等级计算器</h1>需要有死灵神话套装</p>
+            <div class="form-row mb-4">
+                <div class="form-group col-12 col-md-6 col-lg-4">
+                    <label>极限关卡</label>
+                    <input v-model.lazy.number.trim="edSet.stage" type="number" class="form-control artlvl" placeholder="0">
+                </div>
+                <div class="form-group col-12 col-md-6 col-lg-4">
+                    <label for="hero">威吓等级</label>
+                    <input v-model.lazy.number.trim="edSet.intimidate" type="number" class="form-control artlvl" placeholder="0">
+                </div>
+                <div class="form-group col-12 col-md-6 col-lg-4">
+                    <label for="hero">神秘冲击等级</label>
+                    <input v-model.lazy.number.trim="edSet.impact" type="number" class="form-control artlvl" placeholder="0">
+                </div>
+                <div class="form-group col-12 col-md-6 col-lg-4">
+                    <label for="hero">讨价还价等级</label>
+                    <input v-model.lazy.number.trim="edSet.arcane" type="number" class="form-control artlvl" placeholder="0">
+                </div>
+                <div class="form-group col-12 col-md-6 col-lg-4">
+                    <label for="hero">周年白金加成</label>
+                    <input v-model.lazy.number.trim="edSet.platinum" type="number" class="form-control artlvl" placeholder="没有周年白金就填1">
                 </div>
             </div>
-            <button type="button" class="btn btn-danger mt-3 mb-3 mr-2" onclick="undoSkill();">回退上个技能 *</button>
-            <button type="button" class="btn btn-danger mt-3 mb-3" onclick="resetSkills();">重置所有技能</button>
-            <p class="small">* 您只有在未刷新本页面时才能进行回退，且只能回退一次</p>
+            <table class="table table-striped table-sm table-dark">
+                <tbody>
+                <tr>
+                    <th>触发炸弹后的需求(黑暗永恒等级)</th>
+                    <td>{{edLevel.snapTitan}}({{edLevel.halfNeed}})</td>
+                </tr>
+                <tr>
+                    <th>最大飞溅需求(黑暗永恒等级)</th>
+                    <td>{{edLevel.actTitan-1}}({{edLevel.maxNeed}})</td>
+                </tr>
+                <tr>
+                    <th>双炸弹叠加需求(黑暗永恒等级)</th>
+                    <td>{{edLevel.halfSnapTitan-1}}({{edLevel.doubleHalfNeed}})</td>
+                </tr>
+                <tr>
+                    <th>黑暗永恒25级飞溅数</th>
+                    <td>{{edLevel.maxSnap}}</td>
+                </tr>
+                <tr>
+                    <th>原始小怪数</th>
+                    <td>{{edLevel.oriTitan}}</td>
+                </tr>
+                <tr>
+                    <th>实际小怪数</th>
+                    <td>{{edLevel.actTitan}}</td>
+                </tr>
+                <tr>
+                    <th>触发炸弹怪后小怪数</th>
+                    <td>{{edLevel.snapTitan}}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="tab-pane fade" id="log" role="tabpanel" aria-labelledby="log-tab">
+            <table class="table table-striped table-sm table-dark">
+                <thead>
+                    <tr>
+                        <th style="min-width: 90px;">日期</th>
+                        <th>内容</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(value,key) in log">
+                        <td>{{key}}</td>
+                        <td v-html="value"></td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -498,8 +540,11 @@
 <script src="static/js/jquery-3.2.1.slim.min.js"></script>
 <script src="static/js/bootstrap.bundle.min.js"></script>
 <script src="static/js/decimal.min.js"></script>
-<script src="static/js/data.min.js"></script>
-<script src="static/js/weights.min.js"></script>
-<script src="static/js/app.min.js"></script>
+<script src="static/js/data.min.js?v3.2.2"></script>
+<script src="static/js/weights.min.js?v3.2.2"></script>
+<script src="static/js/app.min.js?v3.2.2"></script>
+<!--<script src="static/js/data.js"></script>-->
+<!--<script src="static/js/weights.js"></script>-->
+<!--<script src="static/js/app.js"></script>-->
 </body>
 </html>

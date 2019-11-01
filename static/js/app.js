@@ -1,3 +1,256 @@
+let vm=new Vue({
+    el:'#app',
+    data:{
+        isScreen:false,
+        totalRelics:0,
+        bosLevel:0,
+        bookSet:{
+            stage:0,
+            mythic:0,
+            crafting:0
+        },
+        edSet:{
+            stage:0,
+            intimidate:0,//威吓
+            impact:0,//神秘冲击
+            arcane:0,//讨价还价
+            platinum:1//白金
+        },
+        log:{
+            '2019.09.17':'1.更新了新的神器附魔。<br/>\
+                          2.修复了圣物量低时只加神器附魔的问题。<br/>\
+                          （ps:附魔神器加成在部分手机端显示的时候会多出10，暂时未找到原因，不影响使用)',
+            '2019.08.16':'修复附魔加成计算错误导致的神器加点不对的问题',
+            '2019.08.15':'1.更新了四个神器附魔<br/>\
+                          （TI9:CNDOTA加油！留下那座塔!）',
+            '2019.05.24':'1.新增一键升满有等级上限的神器功能,减少满神器玩家首次录入神器时的工作量<br/>\
+                          2.修复红书占比计算有概率出现不能计算的bug',
+            '2019.05.21':'紧急修复了圣物单位选择e81以后数据不对的问题',
+            '2019.05.18':'1.圣物选择单位从e81提升到e120<br/>\
+                          2.新增红书占比计算功能<br/>\
+                          3.永恒黑暗等级计算增加雷鸣套触发时的需求等级<br/>\
+                          4.修复了紫晶之杖和守护者树叶对天堂流派加成不正确的问题',
+            '2019.05.17':'1.新增红书等级推荐功能(修改了算法,推荐等级降低了，较为合理)<br/>\
+                          2.新增永恒黑暗等级计算功能<br/>\
+                          3.优化了代码架构,后面新增功能时会更及时了<br/>\
+                          (ps：如果有什么好用的功能想让我加上去，可以在QQ群：608172528 @月檬或者私聊我)',
+            '2019.05.14':'1.更新四个新神器数据<br/>',
+            '2019.05.09':'1.更新了神器伤害加成数据<br/>\
+                        2.更新了神器加成系数(影响神器升级优先度)<br/>\
+                        3.修正了部分计算公式<br/>\
+                        4.金币系数统一为0.75<br/>\
+                        5.迪朗达尔之剑现在改为0优先度(之前和冥界头骨一样)<br/>\
+                        6.去掉了技能加点优化功能，因为感觉不智能，我也没有时间去修复得更智能<br/>\
+                        （ps：白天要上班，更新不够及时，望见谅）'
+        },
+        vision:'3.2.3'
+    },
+    created:function(){
+        if(window.localStorage.getItem('bookSet')){
+            this.bookSet=JSON.parse(window.localStorage.getItem('bookSet'));
+        }
+        if(window.localStorage.getItem('edSet')){
+            this.edSet=JSON.parse(window.localStorage.getItem('edSet'));
+        }
+        if(window.localStorage.getItem('totalRelics')){
+            this.totalRelics=window.localStorage.getItem('totalRelics');
+        }
+        if(window.localStorage.getItem('bosLevel')){
+            this.bosLevel=window.localStorage.getItem('bosLevel');
+        }
+    },
+    computed:{
+        totalEffect:function(){
+            let total=0;
+            for(let obj in artifacts.data){
+                if(obj.efficiency>1){
+                    total+=obj.efficiency;
+                }
+            }
+            return total;
+        },
+        bookRatio:function(){
+            window.localStorage.setItem('totalRelics',this.totalRelics?this.totalRelics:0);
+            window.localStorage.setItem('bosLevel',this.bosLevel?this.bosLevel:0);
+            let level=parseFloat(this.bosLevel);
+            let total=parseFloat(this.totalRelics);
+            if(level!=0 && total!=0){
+                let bookInfo=artifacts.data.bos;
+                let bookCost=Math.pow(level + 0.5, bookInfo.cexpo + 1)/(bookInfo.cexpo + 1) * bookInfo.ccoef;
+                if(bookCost/total>1){
+                    return '红书消耗大于总圣物量';
+                }else{
+                    //TODO 可以优化计算，去掉0，提高手机兼容性
+                    return (bookCost/total*100).toFixed(2)+'%';
+                }
+            }else{
+                return 0;
+            }
+        },
+        bookLevel:function () {
+            let stage=this.bookSet.stage;
+            let mythic=this.bookSet.mythic;
+            let crafting=this.bookSet.crafting,result={relics:0,low:0,normal:0,high:0,veryHigh:0,superHigh:0};
+
+            //计算基础圣物
+            let relics=3*Math.pow(1.21,Math.pow(stage,0.48))+1.5*(stage-110)+Math.pow(1.002,Math.pow(stage,Math.min(1.005*(Math.pow(stage,1.1)*0.0000005+1),1.0154985)));
+            if(relics<0){
+                return result;
+            }
+
+            //计算倍率
+            let multiple=Math.pow(1.5*Math.pow(1.02,Math.max(crafting-1,0)),mythic);
+
+            let a=0,b=1,c=1,times=0,totalRelics=relics*multiple;
+            while(times<250){
+                a=a+totalRelics*c;
+                b=Math.pow(a/0.2,1/3.5);
+                c=1+0.05*Math.pow(b,1.087);
+                times++;
+                switch (times) {
+                    case 12:result.low=this.formatNum(b);break;
+                    case 25:result.normal=this.formatNum(b);break;
+                    case 55:result.high=this.formatNum(b);break;
+                    case 120:result.veryHigh=this.formatNum(b);break;
+                    case 250:result.superHigh=this.formatNum(b);break;
+                }
+            }
+
+            result.relics=this.formatNum(relics);
+            window.localStorage.setItem('bookSet',JSON.stringify(this.bookSet));
+            return result;
+        },
+        edLevel:function () {
+            let edSnap=this.edSnap;
+            let stage=Math.floor(this.edSet.stage/500)*500;
+            let ori_titan=8+stage/250;
+            let act_titan=ori_titan-(1*this.edSet.intimidate+1*this.edSet.arcane);
+            let snap_titan=Math.floor(act_titan/2);
+            let half_snap_titan=Math.floor(snap_titan/2);
+            let max_snap=edSnap[25];
+
+            let half_need=0;
+            let max_need=0;
+            let double_half_need=0;
+
+            for(let k in edSnap){
+                k=parseInt(k);
+                let num=edSnap[k]+1;
+                if(num<half_snap_titan){
+                    double_half_need=Math.min(k+1,25);
+                }
+                if(num<snap_titan){
+                    half_need=Math.min(k+1,25);
+                }
+                if(num<act_titan){
+                    max_need=Math.min(k+1,25);
+                }
+            }
+            window.localStorage.setItem('edSet',JSON.stringify(this.edSet));
+            return {
+                oriTitan:ori_titan,
+                actTitan:act_titan,
+                snapTitan:snap_titan,
+                halfSnapTitan:half_snap_titan,
+                maxSnap:max_snap,
+                halfNeed:half_need,
+                doubleHalfNeed:double_half_need,
+                maxNeed:max_need
+            };
+        },
+        edSnap:function(){
+            return {
+                1:this.actSnap(0),
+                2:this.actSnap(1),
+                3:this.actSnap(2),
+                4:this.actSnap(3),
+                5:this.actSnap(4),
+                6:this.actSnap(6),
+                7:this.actSnap(8),
+                8:this.actSnap(10),
+                9:this.actSnap(12),
+                10:this.actSnap(14),
+                11:this.actSnap(16),
+                12:this.actSnap(18),
+                13:this.actSnap(20),
+                14:this.actSnap(23),
+                15:this.actSnap(26),
+                16:this.actSnap(29),
+                17:this.actSnap(33),
+                18:this.actSnap(38),
+                19:this.actSnap(44),
+                20:this.actSnap(51),
+                21:this.actSnap(59),
+                22:this.actSnap(68),
+                23:this.actSnap(78),
+                24:this.actSnap(89),
+                25:this.actSnap(101)
+            }
+        }
+    },
+    methods:{
+        updateAllMaxArtifacts:function () {
+            $.each(artifacts.data, function (k, v) {
+                if(artifacts.data[k].max>0) {
+                    artifacts.data[k].level=artifacts.data[k].max;
+                }
+            });
+            artifacts = calculateAll(artifacts, true);
+        },
+        changeScreen:function(flag){
+            this.isScreen=flag;
+        },
+        formatNum:function (num) {
+            let e=Math.floor(Math.log10(num));
+            let num_text= e>4 ? (num/Math.pow(10,e)).toFixed(2)+'e'+e : Math.floor(num);
+            return num_text;
+        },
+        actSnap:function (num) {
+            return Math.floor((num+1*this.edSet.impact+1*this.edSet.arcane)*this.edSet.platinum);
+        },
+        displayTruncated:function (value) {
+            if (value > 999999999999999) {
+                value = value.toExponential(2);
+                value = value.replace(/\+/, '');
+            } else {
+                if (value > 999999999999) {
+                    value = (value / 1000000000000).toFixed(2).replace(/\.?0+$/, '');
+                    value += 'T';
+                } else if (value > 999999999) {
+                    value = (value / 1000000000).toFixed(2).replace(/\.?0+$/, '');
+                    value += 'B';
+                } else if (value > 999999) {
+                    value = (value / 1000000).toFixed(2).replace(/\.?0+$/, '');
+                    value += 'M';
+                } else if (value > 999) {
+                    value = (value / 1000).toFixed(2).replace(/\.?0+$/, '');
+                    value += 'K';
+                } else if (isNaN(value)) {
+                    value = value.toFixed(2).replace(/\.?0+$/, '');
+                }
+            }
+            return (value);
+        },
+        avoidSci:function (x) {
+            if (Math.abs(x) < 1.0) {
+                var e = parseInt(x.toString().split('e-')[1]);
+                if (e) {
+                    x *= Math.pow(10, e - 1);
+                    x = '0.' + (new Array(e)).join('0') + x.toString().substring(2);
+                }
+            } else {
+                var e = parseInt(x.toString().split('+')[1]);
+                if (e > 20) {
+                    e -= 20;
+                    x /= Math.pow(10, e);
+                    x += (new Array(e + 1)).join('0');
+                }
+            }
+            return x;
+        }
+    }
+});
+
 var winner_e = '';
 var winner_e10 = '';
 var winner_e100 = '';
@@ -69,10 +322,15 @@ function generateArtifacts() {
         row += '<input type="checkbox" aria-label="Checkbox to designate active status for ' + v.name + '" id="' + k + 'active"' + (v.active == 1 ? ' checked="checked"' : '') + ' onchange="updateActive(\'' + k + '\');" tabindex="-1">';
         row += '</td>';
         row += '<td>';
-        row += '<label for="' + k + 'active" id="basic-addon' + k + '">';
+        row += '<label for="' + k + 'active" id="basic-addon' + k + '" class="' + (v.fumo!=undefined?(v.fumo==1?'fumoText':''):'') + '">';
         row += '<span class="d-block d-sm-none">' + v.name + '</span>';
         row += '<span class="d-none d-sm-block">' + v.name + '</span>';
         row += '</label>';
+        row += '</td>';
+        row += '<td>';
+        if (v.fumo!=undefined){
+            row += '<input type="checkbox" aria-label="Checkbox to designate active status for ' + v.name + '" id="' + k + 'fumo"' + (v.fumo == 1 ? ' checked="checked"' : '') + ' onchange="updateFumo(\'' + k + '\');" tabindex="-1">';
+        }
         row += '</td>';
         row += '<td>';
         row += '<input id="' + k + '" value="' + (999999999999999 < v.level ? displayTruncated(v.level) : avoidSci(v.level)) + '" type="number" class="form-control artlvl" placeholder="0" aria-label="Level of ' + v.name + '" aria-describedby="basic-addon' + k + '"onchange="updateArtifact(\'' + k + '\')">';
@@ -212,6 +470,17 @@ function updateActive(k) {
     }
     adjustBoS();
     artifacts = calculate(artifacts, k, true, true);
+}
+
+function updateFumo(k) {
+    if ($('#' + k + 'fumo').is(':checked')) {
+        artifacts.data[k].fumo = 1;
+        $('#basic-addon' + k).addClass('fumoText');
+    } else {
+        artifacts.data[k].fumo = 0;
+        $('#basic-addon' + k).removeClass('fumoText');
+    }
+    updateArtifact(k);
 }
 
 function updateActiveSkill(k) {
@@ -488,6 +757,11 @@ function processPct(k, v, relics, totalAD, tattoo) {
             }
             break;
     }
+
+    // if(v.fumo != undefined && v.fumo == 1){
+    //     current_effect *= v.fumoef;
+    // }
+
     var levels = 0;
     var cost = 0;
     var total_cost = 0;
@@ -929,25 +1203,30 @@ function skillEff(k, v) {
 
 function oldEff(data, k, v) {
     var current_ad = v.level * v.ad;
-    var current_effect = 1 + v.effect * Math.pow(v.level, Math.pow((1 + (v.cexpo - 1) * Math.min(v.grate * v.level, v.gmax)), v.gexpo));
+    var current_effect = 1 + v.effect * Math.pow(v.level, v.gexpo);
     switch (v.dime) {
         case 0:
             break;
         case 1:
             if (0 < artifacts.data.tmg.level) {
-                current_effect *= 10;
+                current_effect =current_effect * 10;
             }
             break;
         case 2:
             if (0 < artifacts.data.ttof.level) {
-                current_effect *= 10;
+                current_effect =current_effect * 10;
             }
             break;
     }
+
+    if(v.fumo != undefined && v.fumo == 1){
+        current_effect = current_effect * v.fumoef;
+    }
+
     data.data[k].current_ad = current_ad;
     data.data[k].current_effect = current_effect;
     if (v.max == -1 || v.max > v.level) {
-        var cost = Math.pow(v.level + 1, v.cexpo) * v.ccoef;
+        var cost = Math.pow(v.level + 0.5, v.cexpo + 1)/(v.cexpo + 1) * v.ccoef;
         data.data[k].cost = cost;
         data.data[k].displayCost = displayTruncated(cost);
         data.data[k].efficiency = calculateArtifactEfficiency(v, cost, 1, current_ad, current_effect, data.totalAD);
@@ -988,6 +1267,7 @@ function calculateArtifactEfficiencyCost(v, levels) {
 }
 
 function calculateArtifactEfficiency(v, cost, lvlChange, current_ad, current_effect, totalAD) {
+    //计算efficiency
     obfuscate++;
     var next_effect = 1 + v.effect * Math.pow(v.level + lvlChange, Math.pow((1 + (v.cexpo - 1) * Math.min(v.grate * (v.level + lvlChange), v.gmax)), v.gexpo));
     switch (v.dime) {
@@ -1004,6 +1284,11 @@ function calculateArtifactEfficiency(v, cost, lvlChange, current_ad, current_eff
             }
             break;
     }
+    //
+    // if(v.fumo != undefined && v.fumo==1){
+    //     next_effect *= v.fumoef;
+    // }
+
     var effect_diff = Math.abs(next_effect) / Math.abs(current_effect);
     var effect_eff = Math.pow(effect_diff, v.rating);
     var ad_change = (((v.level + lvlChange) * v.ad) - current_ad);
@@ -1024,6 +1309,11 @@ function newEff(data, k, v, avglvl, cost, remainingArtifacts) {
     } else {
         var next_effect = 1 + v.effect * Math.pow(v.max, Math.pow((1 + (v.cexpo - 1) * Math.min(v.grate * v.max, v.gmax)), v.gexpo));
     }
+
+    // if(v.fumo != undefined && v.fumo==1){
+    //     next_effect *= v.fumoef;
+    // }
+
     var effect_eff = Math.pow(Math.abs(next_effect), v.rating);
     var ad_eff = 1 + ((avglvl * v.ad) / data.totalAD);
     var eff = Math.abs(((effect_eff * ad_eff) - 1) / cost / remainingArtifacts);
@@ -1402,6 +1692,9 @@ if (storageAvailable('localStorage')) {
             if (undefined != artifacts.data[k]) {
                 artifacts.data[k].level = v.level;
                 artifacts.data[k].active = v.active;
+                if(v.fumo!=undefined){
+                    artifacts.data[k].fumo = v.fumo;
+                }
             }
         });
     }
@@ -1426,6 +1719,7 @@ if (storageAvailable('localStorage')) {
     $('#relic_factor').val(window.localStorage.getItem('relic_factor'));
     $('#spend').val(window.localStorage.getItem('spend'));
     $('#spend_decimal').val(window.localStorage.getItem('spend_decimal'));
+
     var ocd = window.localStorage.getItem('ocd');
     if (ocd) {
         if ('pct' != ocd.substring(0, 3)) {
@@ -1450,14 +1744,14 @@ if (storageAvailable('localStorage')) {
 function storeData() {
     window.localStorage.setItem('artifacts', JSON.stringify(artifacts));
     window.localStorage.setItem('skills', JSON.stringify(skills));
-    window.localStorage.setItem('build', $('#build').val());
-    window.localStorage.setItem('hero', $('#hero').val());
-    window.localStorage.setItem('gold', $('#gold').val());
-    window.localStorage.setItem('active', $('#active').val());
-    window.localStorage.setItem('relic_factor', $('#relic_factor').val());
-    window.localStorage.setItem('spend', $('#spend').val());
-    window.localStorage.setItem('spend_decimal', $('#spend_decimal').val());
-    window.localStorage.setItem('ocd', $('#ocd').val());
+    window.localStorage.setItem('build', $('#build').val()?$('#build').val():'');
+    window.localStorage.setItem('hero', $('#hero').val()?$('#hero').val():'');
+    window.localStorage.setItem('gold', $('#gold').val()?$('#gold').val():'');
+    window.localStorage.setItem('active', $('#active').val()?$('#active').val():'');
+    window.localStorage.setItem('relic_factor', $('#relic_factor').val()?$('#relic_factor').val():'');
+    window.localStorage.setItem('spend', $('#spend').val()?$('#spend').val():'');
+    window.localStorage.setItem('spend_decimal', $('#spend_decimal').val()?$('#spend_decimal').val():''?$('#spend').val():'');
+    window.localStorage.setItem('ocd', $('#ocd').val()?$('#ocd').val():'');
     window.localStorage.setItem('splash', ($('#wet').prop('checked') == true ? 1 : 0));
 }
 
@@ -1506,16 +1800,29 @@ function exportData() {
     $.each(artifacts.data, function (k, v) {
         ex += k + '_';
         ex += v.active + '_';
-        ex += (999999999999999 < v.level ? displayTruncated(v.level) : avoidSci(v.level)) + '|';
+        ex += (999999999999999 < v.level ? displayTruncated(v.level) : avoidSci(v.level));
+        if(v.fumo!=undefined){
+            ex += '_'+v.fumo;
+        }
+        ex += '|';
     });
     ex = ex.slice(0, -1);
-    ex += '=';
-    $.each(skills.data, function (k, v) {
-        ex += k + '_';
-        ex += v.active + '_';
-        ex += v.level + '|';
-    });
-    ex = ex.slice(0, -1);
+
+    //预留兼容技能参数
+    ex += '=undefined=';
+
+    //拼接红书和黑暗永恒参数
+    ex += 'st_' + vm.bookSet.stage + '|';
+    ex += 'my_' + vm.bookSet.mythic + '|';
+    ex += 'cr_' + vm.bookSet.crafting + '|';
+    ex += 'sta_' + vm.edSet.stage + '|';
+    ex += 'in_' + vm.edSet.intimidate + '|';
+    ex += 'im_' + vm.edSet.impact + '|';
+    ex += 'ar_' + vm.edSet.arcane + '|';
+    ex += 'pl_' + vm.edSet.platinum + '|';
+    ex += 'to_' + vm.totalRelics + '|';
+    ex += 'bo_' + vm.bosLevel;
+
     $('#export').empty().text(ex);
     $('#export_wrap').show();
 }
@@ -1556,13 +1863,42 @@ function importData() {
         var imaa = v.split('_');
         artifacts.data[imaa[0]].active = parseInt(imaa[1]);
         artifacts.data[imaa[0]].level = parseFloat(imaa[2]);
+        if(imaa.length==4 && imaa[3]!=undefined){
+            artifacts.data[imaa[0]].fumo = parseInt(imaa[3]);
+        }
     });
-    var ims = im[10].split('|');
-    $.each(ims, function (k, v) {
-        var imss = v.split('_');
-        skills.data[imss[0]].active = parseInt(imss[1]);
-        skills.data[imss[0]].level = parseInt(imss[2]);
-    });
+    //拆解技能
+    if(im.length>=11){
+        if(im[10]!='undefined'){
+            var ims = im[10].split('|');
+            $.each(ims, function (k, v) {
+                var imss = v.split('_');
+                skills.data[imss[0]].active = parseInt(imss[1]);
+                skills.data[imss[0]].level = parseInt(imss[2]);
+            });
+        }
+    }
+    //v3.1以后的新数据
+    if(im.length>11){
+        var imb = im[11].split('|');
+        var myMap = new Map();
+        $.each(imb, function (k, v) {
+            var temp = v.split('_');
+            myMap.set(temp[0],temp[1]);
+        })
+
+        vm.bookSet.stage=myMap.get('st');
+        vm.bookSet.mythic=myMap.get('my');
+        vm.bookSet.crafting=myMap.get('cr');
+        vm.edSet.stage=myMap.get('sta');
+        vm.edSet.intimidate=myMap.get('in');
+        vm.edSet.impact=myMap.get('im');
+        vm.edSet.arcane=myMap.get('ar');
+        vm.edSet.platinum=myMap.get('pl');
+        vm.totalRelics=myMap.get('to')?myMap.get('to'):vm.totalRelics;
+        vm.bosLevel=myMap.get('bo')?myMap.get('bo'):vm.bosLevel;
+    }
+
     $('#export_wrap').hide();
     $('#import_wrap').hide();
     generateArtifacts();
