@@ -973,6 +973,8 @@ var artifacts = {
             }
         },
         'roc': {
+            'fumo': 0,
+            'fumoef': 2e3,
             'active': 1,
             'name': '卡利斯托之戒',
             'nickname': 'RoC',
