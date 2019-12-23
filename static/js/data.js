@@ -432,7 +432,9 @@ var artifacts = {
         },
         'es': {
             'active': 1,
-            'name': '积累堆',
+            'fumo':0,
+            'fumoef':2e7,
+            'name': '累计堆',
             'nickname': 'ES',
             'bonus': ' 每总卡损坏水平',
             'dime': 1,
