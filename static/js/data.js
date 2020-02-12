@@ -472,6 +472,8 @@ var artifacts = {
         },
         'hsw': {
             'active': 1,
+            'fumo': 0,
+            'fumoef': 2e10,
             'name': '天堂之剑',
             'nickname': 'HSw',
             'bonus': ' 所有神器伤害',
